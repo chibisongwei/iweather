@@ -23,6 +23,7 @@ import com.willian.iweather.util.JsonUtil;
 import org.litepal.crud.DataSupport;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import okhttp3.Call;
@@ -51,7 +52,7 @@ public class ChooseAreaFragment extends Fragment {
 
     private List<City> cityList;
 
-    private List<String> dataList;
+    private List<String> dataList = new ArrayList<>();
 
     private List<County> countyList;
 
@@ -69,11 +70,11 @@ public class ChooseAreaFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.choose_area, container, false);
         mTitleText = (TextView) view.findViewById(R.id.tv_title);
-        mBackBtn = (ImageView) view.findViewById(R.id.iv_back);
+        mBackBtn = (ImageView) view.findViewById(R.id.btn_back);
         mListView = (ListView) view.findViewById(R.id.lv_area);
-        mAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, dataList);
+        mAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, dataList);
         mListView.setAdapter(mAdapter);
-        return super.onCreateView(inflater, container, savedInstanceState);
+        return view;
     }
 
     @Override
@@ -196,6 +197,7 @@ public class ChooseAreaFragment extends Fragment {
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            closeProgressDialog();
                             if ("province".equals(type)) {
                                 queryProvinces();
                             }else if ("city".equals(type)) {
