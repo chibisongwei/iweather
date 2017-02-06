@@ -1,9 +1,19 @@
 package com.willian.iweather.exception;
 
+import android.app.ActivityManager;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.Build;
 import android.os.Environment;
 import android.os.Looper;
 import android.os.Process;
+import android.provider.Settings;
+import android.telephony.TelephonyManager;
+import android.text.TextUtils;
 import android.widget.Toast;
 
 import com.orhanobut.logger.Logger;
@@ -107,7 +117,7 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
             return false;
         }
         // 将crach发送到服务器
-        sendCrashToServer();
+        sendCrashToServer(mContext, ex);
 
         new Thread(new Runnable() {
             @Override
@@ -174,9 +184,105 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
     }
 
     /**
-     * 将crach发送到服务器
+     * 收集程序奔溃的信息
      */
-    private void sendCrashToServer() {
+    private void sendCrashToServer(Context ctx, Throwable ex) {
+        // 取出版本号
+        PackageManager pm = ctx.getPackageManager();
+        PackageInfo pi = null;
+        try {
+            pi = pm.getPackageInfo(ctx.getPackageName(), PackageManager.GET_ACTIVITIES);
+            if (pi != null) {
+                String versionName = pi.versionName == null ? "null" : pi.versionName;
+                String versionCode = pi.versionCode + "";
+                mInfos.put("versionName", versionName);
+                mInfos.put("versionCode", versionCode);
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
 
+        HashMap<String, String> exceptionInfo = new HashMap<>();
+        ActivityManager am = (ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
+        String pageName = ctx.getClass().getName();
+        ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
+        am.getMemoryInfo(mi);
+        String memoryInfo = "MemoryInfo:" + mi.availMem + ",app holds:" + mi.threshold + ",Low Memory:" + mi.lowMemory;
+        try {
+            ApplicationInfo appInfo = ctx.getPackageManager().getApplicationInfo(ctx.getPackageName(), PackageManager.GET_META_DATA);
+            String channelId = appInfo.metaData.getString("UMENG_CHANNEL");
+            String version = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionName;
+
+            exceptionInfo.put("PageName", pageName);
+            exceptionInfo.put("ExceptionName", ex.getClass().getName());
+            exceptionInfo.put("ExceptionType", "1");
+            exceptionInfo.put("ExceptionsStackDetail", getStackTrace(ex));
+            exceptionInfo.put("AppVersion", version);
+            exceptionInfo.put("OSVersion", Build.VERSION.RELEASE);
+            exceptionInfo.put("DeviceModel", Build.MODEL);
+            exceptionInfo.put("DeviceId", getDeviceId(ctx));
+            exceptionInfo.put("NetWorkType", String.valueOf(isWifi(ctx)));
+            exceptionInfo.put("ChannelId", channelId);
+            exceptionInfo.put("ClientType", "100");
+            exceptionInfo.put("MemoryInfo", memoryInfo);
+
+            final String requestParam = exceptionInfo.toString();
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+
+                }
+            }).start();
+
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private int isWifi(Context context) {
+        ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+        if (networkInfo != null && networkInfo.getType() == ConnectivityManager.TYPE_WIFI) {
+            return 1;
+        }
+        return 0;
+    }
+
+    /**
+     * 获取手机设备号
+     *
+     * @return
+     */
+    private String getDeviceId(Context context) {
+        String deviceId;
+        try {
+            TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+            deviceId = tm.getDeviceId();
+            tm = null;
+            if (TextUtils.isEmpty(deviceId)) {
+                deviceId = Settings.Secure.getString(mContext.getContentResolver(), Settings.Secure.ANDROID_ID);
+            }
+        } catch (Exception e) {
+            deviceId = Settings.Secure.getString(mContext.getContentResolver(), Settings.Secure.ANDROID_ID);
+        }
+        return deviceId;
+    }
+
+    private String getStackTrace(Throwable th) {
+        final Writer result = new StringWriter();
+        final PrintWriter printWriter = new PrintWriter(result);
+
+        // If the exception was thrown in a background thread inside
+        // AsyncTask, then the actual exception can be found with getCause
+        Throwable cause = th;
+        while (cause != null) {
+            cause.printStackTrace(printWriter);
+            cause = cause.getCause();
+        }
+        final String stacktraceAsString = result.toString();
+        printWriter.close();
+
+        return stacktraceAsString;
     }
 }

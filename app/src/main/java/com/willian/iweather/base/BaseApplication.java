@@ -1,21 +1,25 @@
 package com.willian.iweather.base;
 
-import android.app.Application;
-
+import com.facebook.drawee.backends.pipeline.Fresco;
+import com.orhanobut.logger.LogLevel;
 import com.orhanobut.logger.Logger;
 
+import org.litepal.LitePalApplication;
+
 /**
- * Created by willian on 2017/1/18.
+ * 基类Application
  */
 
-public class BaseApplication extends Application {
+public class BaseApplication extends LitePalApplication {
 
     private static final String TAG = "WeatherLogger";
 
     @Override
     public void onCreate() {
         super.onCreate();
-        // 自定义TAG
-        Logger.init(TAG);
+        // 自定义Logger的TAG
+        Logger.init(TAG).logLevel(LogLevel.FULL);
+        // 初始化
+        Fresco.initialize(this);
     }
 }
