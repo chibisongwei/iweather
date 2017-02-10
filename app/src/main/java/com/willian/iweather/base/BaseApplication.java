@@ -1,6 +1,5 @@
 package com.willian.iweather.base;
 
-import com.facebook.drawee.backends.pipeline.Fresco;
 import com.orhanobut.logger.LogLevel;
 import com.orhanobut.logger.Logger;
 
@@ -19,7 +18,5 @@ public class BaseApplication extends LitePalApplication {
         super.onCreate();
         // 自定义Logger的TAG
         Logger.init(TAG).logLevel(LogLevel.FULL);
-        // 初始化
-        Fresco.initialize(this);
     }
 }

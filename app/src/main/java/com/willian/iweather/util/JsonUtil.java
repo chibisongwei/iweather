@@ -2,9 +2,11 @@ package com.willian.iweather.util;
 
 import android.text.TextUtils;
 
+import com.google.gson.Gson;
 import com.willian.iweather.model.City;
 import com.willian.iweather.model.County;
 import com.willian.iweather.model.Province;
+import com.willian.iweather.model.Weather;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -88,5 +90,23 @@ public class JsonUtil {
             }
         }
         return false;
+    }
+
+    /**
+     * 将返回的json数据解析成Weather实体类
+     *
+     * @param response
+     * @return
+     */
+    public static Weather parseWeatherResponse(String response) {
+        try {
+            JSONObject jsonObject = new JSONObject(response);
+            JSONArray jsonArray = jsonObject.getJSONArray("HeWeather");
+            String weatherContent = jsonArray.getJSONObject(0).toString();
+            return new Gson().fromJson(weatherContent, Weather.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
